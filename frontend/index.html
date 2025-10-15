@@ -1,0 +1,1245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodeInsight v2.0 - Professional Code Review</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #0066FF;
+            --secondary: #00D4AA;
+            --danger: #FF3860;
+            --warning: #FFB020;
+            --success: #00D97E;
+            --dark: #1A1D29;
+            --dark-2: #252837;
+            --text: #E4E7EC;
+            --text-muted: #9BA3B4;
+            --bg: #0F1117;
+            --card: #1A1D29;
+            --border: #2E3245;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .navbar {
+            background: var(--dark);
+            border-bottom: 1px solid var(--border);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .version {
+            background: var(--primary);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            margin-left: 0.5rem;
+        }
+
+        .nav-stats {
+            display: flex;
+            gap: 2rem;
+            font-size: 0.9rem;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 0.75rem;
+        }
+
+        .stat-value {
+            color: var(--text);
+            font-weight: 600;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            background: var(--dark);
+            padding: 0.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            flex-wrap: wrap;
+        }
+
+        .tab {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+        }
+
+        .tab:hover {
+            background: var(--dark-2);
+            color: var(--text);
+        }
+
+        .tab.active {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .card {
+            background: var(--card);
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            overflow: hidden;
+            margin-bottom: 2rem;
+        }
+
+        .card-header {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .card-body {
+            padding: 1.5rem;
+        }
+
+        .upload-zone {
+            border: 2px dashed var(--border);
+            border-radius: 12px;
+            padding: 3rem;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: rgba(0, 102, 255, 0.02);
+        }
+
+        .upload-zone:hover {
+            border-color: var(--primary);
+            background: rgba(0, 102, 255, 0.05);
+        }
+
+        .upload-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 1rem;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+        }
+
+        .btn {
+            padding: 0.875rem 2rem;
+            border-radius: 10px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 1rem;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), #0052CC);
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(0, 102, 255, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--dark-2);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, var(--dark-2), var(--dark));
+            padding: 2rem;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            text-align: center;
+        }
+
+        .stat-card h3 {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-card .value {
+            font-size: 3rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--text), var(--text-muted));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric-card {
+            background: var(--dark-2);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+        }
+
+        .metric-label {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .metric-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--text), var(--text-muted));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .chart-container {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+        }
+
+        .issues-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        @media (max-width: 1200px) {
+            .issues-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .issues-grid {
+                grid-template-columns: 1fr;
+            }
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .issue-card {
+            background: var(--dark-2);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--danger);
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 0.75rem;
+        }
+
+        .issue-card.warning {
+            border-left-color: var(--warning);
+        }
+
+        .issue-card.suggestion {
+            border-left-color: var(--primary);
+        }
+
+        .issue-card.strength {
+            border-left-color: var(--success);
+        }
+
+        .summary-card {
+            background: linear-gradient(135deg, rgba(0, 102, 255, 0.1), rgba(0, 212, 170, 0.1));
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .summary-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text);
+        }
+
+        .results-section {
+            display: none;
+            margin-top: 2rem;
+        }
+
+        .results-section.show {
+            display: block;
+        }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .alert-success {
+            background: rgba(0, 217, 126, 0.1);
+            border: 1px solid var(--success);
+            color: var(--success);
+        }
+
+        .alert-error {
+            background: rgba(255, 56, 96, 0.1);
+            border: 1px solid var(--danger);
+            color: var(--danger);
+        }
+
+        #fileInput, #batchFileInput {
+            display: none;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin: 2rem auto;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--text-muted);
+        }
+
+        select, .search-box {
+            width: 100%;
+            padding: 0.875rem;
+            border-radius: 10px;
+            border: 1px solid var(--border);
+            background: var(--dark-2);
+            color: var(--text);
+            font-size: 1rem;
+        }
+
+        .file-list {
+            margin-top: 1rem;
+        }
+
+        .file-item {
+            background: var(--dark-2);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .compare-selector {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .compare-result {
+            background: var(--dark-2);
+            padding: 2rem;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            margin-top: 1rem;
+        }
+
+        .improvement-badge {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-weight: 600;
+            margin-left: 1rem;
+        }
+
+        .improvement-badge.positive {
+            background: rgba(0, 217, 126, 0.2);
+            color: var(--success);
+        }
+
+        .improvement-badge.negative {
+            background: rgba(255, 56, 96, 0.2);
+            color: var(--danger);
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div style="display: flex; align-items: center;">
+            <div class="logo">⚡ CodeInsight</div>
+            <span class="version">v2.0</span>
+        </div>
+        <div class="nav-stats">
+            <div class="stat-item">
+                <span class="stat-label">Total Reviews</span>
+                <span class="stat-value" id="totalReviews">0</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Avg Quality</span>
+                <span class="stat-value" id="avgQuality">-</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">This Week</span>
+                <span class="stat-value" id="thisWeek">0</span>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="tabs">
+            <button class="tab active" onclick="showTab('upload')">📤 Upload</button>
+            <button class="tab" onclick="showTab('batch')">📦 Batch Upload</button>
+            <button class="tab" onclick="showTab('statistics')">📊 Statistics</button>
+            <button class="tab" onclick="showTab('search')">🔍 Search</button>
+            <button class="tab" onclick="showTab('compare')">⚖️ Compare</button>
+            <button class="tab" onclick="showTab('trends')">📈 Trends</button>
+        </div>
+
+        <div id="alertContainer"></div>
+
+        <!-- Single Upload Tab -->
+        <div id="upload-tab" class="tab-content active">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">Single File Analysis</div>
+                </div>
+                <div class="card-body">
+                    <div class="upload-zone" id="uploadZone">
+                        <div class="upload-icon">📄</div>
+                        <h3>Drop your code file here</h3>
+                        <p style="color: var(--text-muted);">or click to browse</p>
+                    </div>
+                    <input type="file" id="fileInput">
+                    <div id="fileInfo"></div>
+                    <button class="btn btn-primary" id="analyzeBtn" disabled style="width: 100%; margin-top: 1rem;">
+                        🔍 Analyze Code
+                    </button>
+                    <div class="loading" id="loading">
+                        <div class="spinner"></div>
+                        <p style="color: var(--text-muted);">Analyzing your code...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div class="results-section" id="resultsSection">
+                <div class="summary-card">
+                    <div class="summary-title">📊 Analysis Summary</div>
+                    <p id="summaryText">Your detailed code analysis will appear here</p>
+                </div>
+
+                <div class="metrics-grid">
+                    <div class="metric-card">
+                        <div class="metric-label">Overall Quality</div>
+                        <div class="metric-value" id="overallScore">-</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Readability</div>
+                        <div class="metric-value" id="readabilityScore">-</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Modularity</div>
+                        <div class="metric-value" id="modularityScore">-</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Best Practices</div>
+                        <div class="metric-value" id="bestPracticesScore">-</div>
+                    </div>
+                </div>
+
+                <div class="charts-grid">
+                    <div class="chart-container">
+                        <h3 style="margin-bottom: 1.5rem;">📈 Code Quality Radar</h3>
+                        <canvas id="radarChart"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <h3 style="margin-bottom: 1.5rem;">📊 Issues Breakdown</h3>
+                        <canvas id="doughnutChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card" style="margin-bottom: 2rem;">
+                    <div class="card-header">
+                        <div class="card-title">🔴 Critical Errors</div>
+                        <span id="errorCount" style="color: var(--danger); font-weight: 600; font-size: 1.25rem;">0</span>
+                    </div>
+                    <div class="card-body">
+                        <div id="errorsList"></div>
+                    </div>
+                </div>
+
+                <div class="issues-grid">
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">⚠️ Warnings</div>
+                            <span id="warningCount" style="color: var(--warning); font-weight: 600;">0</span>
+                        </div>
+                        <div class="card-body">
+                            <div id="warningsList"></div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">💡 Suggestions</div>
+                            <span id="suggestionCount" style="color: var(--primary); font-weight: 600;">0</span>
+                        </div>
+                        <div class="card-body">
+                            <div id="suggestionsList"></div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">✅ Strengths</div>
+                        </div>
+                        <div class="card-body">
+                            <div id="strengthsList"></div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">🔒 Security</div>
+                        </div>
+                        <div class="card-body">
+                            <div id="securityList"></div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header">
+                            <div class="card-title">⚡ Performance</div>
+                        </div>
+                        <div class="card-body">
+                            <div id="performanceList"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Batch Upload Tab -->
+        <div id="batch-tab" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">🆕 Batch File Analysis</div>
+                </div>
+                <div class="card-body">
+                    <div class="upload-zone" id="batchUploadZone">
+                        <div class="upload-icon">📦</div>
+                        <h3>Drop multiple files here</h3>
+                        <p style="color: var(--text-muted);">Upload up to 10 files at once</p>
+                    </div>
+                    <input type="file" id="batchFileInput" multiple>
+                    <div id="batchFileList" class="file-list"></div>
+                    <button class="btn btn-primary" id="batchAnalyzeBtn" disabled style="width: 100%; margin-top: 1rem;">
+                        🔍 Analyze All Files
+                    </button>
+                    <div class="loading" id="batchLoading">
+                        <div class="spinner"></div>
+                        <p style="color: var(--text-muted);">Analyzing multiple files...</p>
+                    </div>
+                    <div id="batchResults"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistics Tab -->
+        <div id="statistics-tab" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">📊 Comprehensive Statistics</div>
+                    <button class="btn btn-secondary" onclick="loadStatistics()">🔄 Refresh</button>
+                </div>
+                <div class="card-body">
+                    <div class="stats-grid" id="statsGrid">
+                        <div class="empty-state">Click Refresh to load statistics</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search Tab -->
+        <div id="search-tab" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">🔍 Search Reviews</div>
+                </div>
+                <div class="card-body">
+                    <input type="text" class="search-box" id="searchInput" placeholder="Search by filename...">
+                    <div id="searchResults">
+                        <div class="empty-state">Enter a search term above</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Compare Tab -->
+        <div id="compare-tab" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">⚖️ Compare Reviews</div>
+                </div>
+                <div class="card-body">
+                    <div class="compare-selector">
+                        <div>
+                            <label style="display: block; margin-bottom: 0.5rem; color: var(--text-muted);">First Review</label>
+                            <select id="compare1"></select>
+                        </div>
+                        <div>
+                            <label style="display: block; margin-bottom: 0.5rem; color: var(--text-muted);">Second Review</label>
+                            <select id="compare2"></select>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary" onclick="compareReviews()" style="width: 100%;">
+                        ⚖️ Compare
+                    </button>
+                    <div id="compareResults"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Trends Tab -->
+        <div id="trends-tab" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">📈 Quality Trends</div>
+                    <select id="trendDays" onchange="loadTrends()" style="width: auto;">
+                        <option value="7">Last 7 days</option>
+                        <option value="14">Last 14 days</option>
+                        <option value="30">Last 30 days</option>
+                    </select>
+                </div>
+                <div class="card-body">
+                    <canvas id="trendChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:5001';
+        let selectedFile = null;
+        let selectedFiles = [];
+        let radarChart, doughnutChart, trendChart;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            setupEventListeners();
+            loadNavStats();
+            loadCompareOptions();
+        });
+
+        function showTab(tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName + '-tab').classList.add('active');
+
+            if (tabName === 'statistics') loadStatistics();
+            if (tabName === 'trends') loadTrends();
+            if (tabName === 'compare') loadCompareOptions();
+        }
+
+        function setupEventListeners() {
+            const uploadZone = document.getElementById('uploadZone');
+            const fileInput = document.getElementById('fileInput');
+            uploadZone.addEventListener('click', () => fileInput.click());
+            fileInput.addEventListener('change', (e) => {
+                if (e.target.files.length) handleFileSelect(e.target.files[0]);
+            });
+            document.getElementById('analyzeBtn').addEventListener('click', analyzeCode);
+
+            const batchUploadZone = document.getElementById('batchUploadZone');
+            const batchFileInput = document.getElementById('batchFileInput');
+            batchUploadZone.addEventListener('click', () => batchFileInput.click());
+            batchFileInput.addEventListener('change', (e) => {
+                if (e.target.files.length) handleBatchFileSelect(e.target.files);
+            });
+            document.getElementById('batchAnalyzeBtn').addEventListener('click', analyzeBatch);
+
+            document.getElementById('searchInput').addEventListener('input', debounce(searchReviews, 500));
+        }
+
+        function handleFileSelect(file) {
+            selectedFile = file;
+            document.getElementById('fileInfo').innerHTML = `
+                <div style="background: var(--dark-2); padding: 1rem; border-radius: 8px; margin-top: 1rem;">
+                    <strong>${file.name}</strong> (${(file.size / 1024).toFixed(2)} KB)
+                </div>
+            `;
+            document.getElementById('analyzeBtn').disabled = false;
+        }
+
+        function handleBatchFileSelect(files) {
+            selectedFiles = Array.from(files).slice(0, 10);
+            const listHTML = selectedFiles.map(f => `
+                <div class="file-item">
+                    <span>📄 ${f.name}</span>
+                    <span>${(f.size / 1024).toFixed(2)} KB</span>
+                </div>
+            `).join('');
+            document.getElementById('batchFileList').innerHTML = listHTML;
+            document.getElementById('batchAnalyzeBtn').disabled = false;
+        }
+
+        async function analyzeCode() {
+            const loading = document.getElementById('loading');
+            const btn = document.getElementById('analyzeBtn');
+            
+            loading.classList.add('show');
+            btn.disabled = true;
+
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+
+            try {
+                const response = await fetch(`${API_URL}/api/review`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    displayResults(data.report);
+                    loadNavStats();
+                    showAlert('✅ Analysis completed successfully!', 'success');
+                } else {
+                    showAlert('❌ ' + data.error, 'error');
+                }
+            } catch (error) {
+                showAlert('❌ Error: ' + error.message, 'error');
+            } finally {
+                loading.classList.remove('show');
+                btn.disabled = false;
+            }
+        }
+
+        function displayResults(report) {
+            const resultsSection = document.getElementById('resultsSection');
+            resultsSection.classList.add('show');
+            resultsSection.scrollIntoView({ behavior: 'smooth' });
+
+            document.getElementById('summaryText').textContent = report.summary;
+            document.getElementById('overallScore').textContent = report.overall_score;
+            document.getElementById('readabilityScore').textContent = report.detailed_scores.readability;
+            document.getElementById('modularityScore').textContent = report.detailed_scores.modularity;
+            document.getElementById('bestPracticesScore').textContent = report.detailed_scores.best_practices;
+
+            createRadarChart(report);
+            createDoughnutChart(report);
+
+            displayIssues('errorsList', report.errors, 'error');
+            displayIssues('warningsList', report.warnings, 'warning');
+            displayIssues('suggestionsList', report.suggestions, 'suggestion');
+            displayList('strengthsList', report.strengths, 'strength');
+            displayList('securityList', report.security_concerns, 'error');
+            displayList('performanceList', report.performance_notes, 'suggestion');
+
+            document.getElementById('errorCount').textContent = report.errors.length;
+            document.getElementById('warningCount').textContent = report.warnings.length;
+            document.getElementById('suggestionCount').textContent = report.suggestions.length;
+        }
+
+        function createRadarChart(report) {
+            const ctx = document.getElementById('radarChart').getContext('2d');
+            if (radarChart) radarChart.destroy();
+
+            const securityScore = Math.max(0, 100 - (report.security_concerns.length * 15));
+            const performanceScore = Math.max(0, 100 - (report.performance_notes.length * 15));
+
+            radarChart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['Readability', 'Modularity', 'Best Practices', 'Security', 'Performance'],
+                    datasets: [{
+                        label: 'Code Quality',
+                        data: [
+                            report.detailed_scores.readability,
+                            report.detailed_scores.modularity,
+                            report.detailed_scores.best_practices,
+                            securityScore,
+                            performanceScore
+                        ],
+                        backgroundColor: 'rgba(0, 102, 255, 0.15)',
+                        borderColor: 'rgba(0, 102, 255, 0.8)',
+                        borderWidth: 2,
+                        pointBackgroundColor: 'rgba(0, 212, 170, 1)',
+                        pointBorderColor: '#fff',
+                        pointRadius: 5
+                    }]
+                },
+                options: {
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: { color: '#9BA3B4', stepSize: 20 },
+                            grid: { color: '#2E3245' },
+                            pointLabels: { color: '#E4E7EC', font: { size: 12, weight: '600' } }
+                        }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        function createDoughnutChart(report) {
+            const ctx = document.getElementById('doughnutChart').getContext('2d');
+            if (doughnutChart) doughnutChart.destroy();
+
+            doughnutChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Errors', 'Warnings', 'Suggestions'],
+                    datasets: [{
+                        data: [report.errors.length, report.warnings.length, report.suggestions.length],
+                        backgroundColor: ['rgba(255, 56, 96, 0.8)', 'rgba(255, 176, 32, 0.8)', 'rgba(0, 102, 255, 0.8)'],
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: '#E4E7EC', padding: 15 }
+                        }
+                    },
+                    cutout: '65%'
+                }
+            });
+        }
+
+        function displayIssues(elementId, issues, type) {
+            const container = document.getElementById(elementId);
+            if (issues.length === 0) {
+                container.innerHTML = '<div class="empty-state">No issues found! 🎉</div>';
+                return;
+            }
+
+            container.innerHTML = issues.map(issue => {
+                const badge = issue.severity ? 
+                    `<span style="background: rgba(255, 56, 96, 0.2); color: var(--danger); padding: 0.25rem 0.5rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600; margin-left: 0.5rem;">${issue.severity.toUpperCase()}</span>` : '';
+                
+                return `
+                    <div class="issue-card ${type}">
+                        <div style="font-weight: 600; margin-bottom: 0.5rem;">
+                            ${issue.type || issue.category || 'Issue'}${badge}
+                            ${issue.line ? ` (Line ${issue.line})` : ''}
+                        </div>
+                        <div style="color: var(--text-muted); font-size: 0.9rem;">
+                            ${issue.description}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function displayList(elementId, items, type) {
+            const container = document.getElementById(elementId);
+            if (items.length === 0) {
+                container.innerHTML = '<div class="empty-state">None found</div>';
+                return;
+            }
+
+            container.innerHTML = items.map(item => `
+                <div class="issue-card ${type}">
+                    <div style="color: var(--text);">${item}</div>
+                </div>
+            `).join('');
+        }
+
+        async function analyzeBatch() {
+            const loading = document.getElementById('batchLoading');
+            const btn = document.getElementById('batchAnalyzeBtn');
+            
+            loading.classList.add('show');
+            btn.disabled = true;
+
+            const formData = new FormData();
+            selectedFiles.forEach(file => formData.append('files', file));
+
+            try {
+                const response = await fetch(`${API_URL}/api/batch-review`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    const resultsHTML = `
+                        <div style="margin-top: 2rem;">
+                            <h3>Results</h3>
+                            <div class="stats-grid" style="margin-top: 1rem;">
+                                <div class="stat-card">
+                                    <h3>Total Analyzed</h3>
+                                    <div class="value">${data.total}</div>
+                                </div>
+                                <div class="stat-card">
+                                    <h3>Failed</h3>
+                                    <div class="value">${data.failed}</div>
+                                </div>
+                            </div>
+                            ${data.results.map(r => `
+                                <div class="file-item" style="margin-top: 0.5rem;">
+                                    <span>📄 ${r.filename}</span>
+                                    <span style="color: var(--success);">Score: ${r.quality_score}/100</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                    document.getElementById('batchResults').innerHTML = resultsHTML;
+                    showAlert(`✅ Analyzed ${data.total} files!`, 'success');
+                    loadNavStats();
+                } else {
+                    showAlert('❌ Batch analysis failed', 'error');
+                }
+            } catch (error) {
+                showAlert('❌ Error: ' + error.message, 'error');
+            } finally {
+                loading.classList.remove('show');
+                btn.disabled = false;
+            }
+        }
+
+        async function loadStatistics() {
+            try {
+                const response = await fetch(`${API_URL}/api/statistics`);
+                const data = await response.json();
+                const stats = data.statistics;
+
+                const statsHTML = `
+                    <div class="stat-card">
+                        <h3>Total Reviews</h3>
+                        <div class="value">${stats.total_reviews}</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Average Quality</h3>
+                        <div class="value">${stats.average_quality}</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Total Errors</h3>
+                        <div class="value">${stats.total_errors}</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Total Warnings</h3>
+                        <div class="value">${stats.total_warnings}</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Recent Activity</h3>
+                        <div class="value">${stats.recent_activity_7d}</div>
+                        <small style="color: var(--text-muted);">Last 7 days</small>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Avg Errors/Review</h3>
+                        <div class="value">${stats.average_errors}</div>
+                    </div>
+                `;
+                document.getElementById('statsGrid').innerHTML = statsHTML;
+            } catch (error) {
+                showAlert('❌ Error loading statistics', 'error');
+            }
+        }
+
+        async function searchReviews() {
+            const query = document.getElementById('searchInput').value;
+            if (!query) {
+                document.getElementById('searchResults').innerHTML = '<div class="empty-state">Enter a search term above</div>';
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/api/reviews/search?q=${encodeURIComponent(query)}`);
+                const data = await response.json();
+
+                if (data.count === 0) {
+                    document.getElementById('searchResults').innerHTML = '<div class="empty-state">No results found</div>';
+                    return;
+                }
+
+                const resultsHTML = data.results.map(r => `
+                    <div class="file-item" style="margin-top: 1rem;">
+                        <div>
+                            <div style="font-weight: 600;">📄 ${r.filename}</div>
+                            <div style="color: var(--text-muted); font-size: 0.9rem;">
+                                Score: ${r.quality_score}/100 • ${new Date(r.timestamp).toLocaleDateString()}
+                            </div>
+                        </div>
+                        <button class="btn btn-secondary" onclick="exportReview(${r.id})" style="padding: 0.5rem 1rem;">💾 Export</button>
+                    </div>
+                `).join('');
+
+                document.getElementById('searchResults').innerHTML = resultsHTML;
+            } catch (error) {
+                showAlert('❌ Error searching', 'error');
+            }
+        }
+
+        async function loadCompareOptions() {
+            try {
+                const response = await fetch(`${API_URL}/api/reviews`);
+                const data = await response.json();
+
+                const options = data.reviews.map(r => 
+                    `<option value="${r.id}">${r.filename} (Score: ${r.quality_score})</option>`
+                ).join('');
+
+                document.getElementById('compare1').innerHTML = '<option value="">Select review...</option>' + options;
+                document.getElementById('compare2').innerHTML = '<option value="">Select review...</option>' + options;
+            } catch (error) {
+                console.error('Error loading compare options:', error);
+            }
+        }
+
+        async function compareReviews() {
+            const id1 = document.getElementById('compare1').value;
+            const id2 = document.getElementById('compare2').value;
+
+            if (!id1 || !id2) {
+                showAlert('⚠️ Please select two reviews', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/api/reviews/compare`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({review_id_1: parseInt(id1), review_id_2: parseInt(id2)})
+                });
+                const data = await response.json();
+                const comp = data.comparison;
+
+                const resultHTML = `
+                    <div class="compare-result">
+                        <h3>Comparison Results ${comp.improvement ? 
+                            '<span class="improvement-badge positive">✅ Improvement</span>' : 
+                            '<span class="improvement-badge negative">❌ Regression</span>'
+                        }</h3>
+                        
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-top: 2rem;">
+                            <div>
+                                <h4 style="color: var(--primary);">Review 1: ${comp.review_1.filename}</h4>
+                                <p>Quality: ${comp.review_1.quality_score}/100</p>
+                                <p>Errors: ${comp.review_1.errors}</p>
+                                <p>Warnings: ${comp.review_1.warnings}</p>
+                            </div>
+                            <div>
+                                <h4 style="color: var(--secondary);">Review 2: ${comp.review_2.filename}</h4>
+                                <p>Quality: ${comp.review_2.quality_score}/100</p>
+                                <p>Errors: ${comp.review_2.errors}</p>
+                                <p>Warnings: ${comp.review_2.warnings}</p>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-top: 2rem; padding: 1rem; background: var(--dark); border-radius: 8px;">
+                            <h4>Differences</h4>
+                            <p>Quality Change: ${comp.differences.quality_score_diff > 0 ? '+' : ''}${comp.differences.quality_score_diff}</p>
+                            <p>Error Change: ${comp.differences.errors_diff > 0 ? '+' : ''}${comp.differences.errors_diff}</p>
+                            <p>Warning Change: ${comp.differences.warnings_diff > 0 ? '+' : ''}${comp.differences.warnings_diff}</p>
+                        </div>
+                    </div>
+                `;
+
+                document.getElementById('compareResults').innerHTML = resultHTML;
+            } catch (error) {
+                showAlert('❌ Error comparing reviews', 'error');
+            }
+        }
+
+        async function loadTrends() {
+            const days = document.getElementById('trendDays').value;
+
+            try {
+                const response = await fetch(`${API_URL}/api/trends?days=${days}`);
+                const data = await response.json();
+
+                const ctx = document.getElementById('trendChart').getContext('2d');
+                if (trendChart) trendChart.destroy();
+
+                trendChart = new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: data.trends.map(t => t.date),
+                        datasets: [{
+                            label: 'Average Quality',
+                            data: data.trends.map(t => t.average_quality),
+                            borderColor: '#0066FF',
+                            backgroundColor: 'rgba(0, 102, 255, 0.1)',
+                            tension: 0.4,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        plugins: {
+                            legend: { labels: { color: '#E4E7EC' } }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 100,
+                                ticks: { color: '#9BA3B4' },
+                                grid: { color: '#2E3245' }
+                            },
+                            x: {
+                                ticks: { color: '#9BA3B4' },
+                                grid: { color: '#2E3245' }
+                            }
+                        }
+                    }
+                });
+            } catch (error) {
+                showAlert('❌ Error loading trends', 'error');
+            }
+        }
+
+        async function exportReview(id) {
+            window.location.href = `${API_URL}/api/review/${id}/export`;
+            showAlert('📥 Downloading export...', 'success');
+        }
+
+        async function loadNavStats() {
+            try {
+                const response = await fetch(`${API_URL}/api/statistics`);
+                const data = await response.json();
+                const stats = data.statistics;
+
+                document.getElementById('totalReviews').textContent = stats.total_reviews || 0;
+                document.getElementById('avgQuality').textContent = stats.average_quality ? `${stats.average_quality}/100` : '-';
+                document.getElementById('thisWeek').textContent = stats.recent_activity_7d || 0;
+            } catch (error) {
+                console.error('Error loading nav stats:', error);
+            }
+        }
+
+        function showAlert(message, type) {
+            const alertContainer = document.getElementById('alertContainer');
+            alertContainer.innerHTML = `<div class="alert alert-${type}">${message}</div>`;
+            setTimeout(() => alertContainer.innerHTML = '', 5000);
+        }
+
+        function debounce(func, wait) {
+            let timeout;
+            return function(...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), wait);
+            };
+        }
+    </script>
+</body>
+</html>
