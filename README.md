@@ -4,7 +4,7 @@ An AI-powered automated code review tool with advanced analytics and visualizati
 
 ## Demo Video
 
-[Video demonstration will be added here - Google Drive link]
+[Watch Demo Video](https://drive.google.com/file/d/1_3FuGQjBy5ANb9ptLtCBXV63BRk32CBC/view?usp=drive_link)
 
 ## Overview
 
